@@ -12,13 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'httparty'
-require 'singleton'
-
-require 'openam/auth/version'
-require 'openam/auth/config'
-
 module OpenAM
   module Auth
+    class Config
+      class << self
+        def config
+          @config ||= Configuration.new
+        end
+      end
+      
+      protected
+      
+      class Configuration
+        def initialize
+          @u_defined = {}
+        end
+
+        def udefine(name, *opts)
+          if !name.nil?
+            name = name.to_s
+            if name =~ /\=\z/
+              name.gsub! /\=/, ''
+              if opts.size == 1
+                @u_defined[name.to_sym] = opts.first
+              end
+            else
+              @u_defined[name.to_sym]
+            end
+          end
+        end
+        alias method_missing udefine
+      end
+    end
   end
 end
