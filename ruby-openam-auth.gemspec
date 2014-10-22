@@ -1,9 +1,10 @@
 
 $:.push File.expand_path("../lib", __FILE__)
+require 'openam/auth/version'
 
 Gem::Specification.new do |spec|
-  spec.name         = 'ruby-openam-auth'
-  spec.version      = '0.1'
+  spec.name         = OpenAM::Auth::NAME
+  spec.version      = OpenAM::Auth::VERSION
   spec.summary      = 'Ruby library for the OpenAM authentication API'
   spec.description  = "Library for interacting with the OpenAM authentication API, " \
                       "including token validation, account authentication and " \
