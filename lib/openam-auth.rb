@@ -20,5 +20,19 @@ require 'openam/auth/config'
 
 module OpenAM
   module Auth
+    class << self
+      def config
+        OpenAM::Auth::Config.config
+      end
+      
+      def configure(&block)
+        class_eval(&block)
+      end
+    end
   end
+end
+
+# Default Configuration Setup
+OpenAM::Auth.configure do
+  config.timeout = 20
 end
