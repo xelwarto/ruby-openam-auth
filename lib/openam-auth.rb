@@ -18,6 +18,7 @@ require 'singleton'
 require 'openam/auth/version'
 require 'openam/auth/errors'
 require 'openam/auth/config'
+require 'openam/auth/api'
 
 module OpenAM
   module Auth
