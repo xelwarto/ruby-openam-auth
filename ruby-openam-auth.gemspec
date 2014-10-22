@@ -6,8 +6,8 @@ Gem::Specification.new do |spec|
   spec.version      = '0.1'
   spec.summary      = 'Ruby library for the OpenAM authentication API'
   spec.description  = "Library for interacting with the OpenAM authentication API, " \
-                                "including token validation, account authentication and " \
-                                "authenticated account retrieval"
+                      "including token validation, account authentication and " \
+                      "authenticated account retrieval"
   spec.licenses     = ['Apache-2.0']
   spec.platform     = Gem::Platform::RUBY
   spec.authors      = ['Ted Elwartowski']
