@@ -1,6 +1,5 @@
 
 $:.push File.expand_path("lib", File.dirname(__FILE__))
-puts $:
 require 'openam/auth/version'
 
 Gem::Specification.new do |spec|
@@ -19,7 +18,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version  = '>= 1.9.3'
   
   # https://github.com/jnunemaker/httparty
-  spec.add_dependency 'httparty', '>= 0.13.1'
+  spec.add_dependency 'httparty', '~> 0.13'
 
   files = []
   dirs = %w{lib}
