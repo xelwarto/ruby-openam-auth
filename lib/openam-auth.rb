@@ -16,5 +16,7 @@ require 'httparty'
 
 require 'openam/auth/version'
 
-module OpenAM::Auth
+module OpenAM
+  module Auth
+  end
 end
