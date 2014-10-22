@@ -14,10 +14,13 @@
 
 require 'httparty'
 require 'uri/http'
+require 'singleton'
+require 'json'
 
 require 'openam/auth/version'
 require 'openam/auth/error'
 require 'openam/auth/config'
+require 'openam/auth/http'
 require 'openam/auth/api'
 
 module OpenAM
@@ -32,7 +35,16 @@ module OpenAM
       end
       
       def cookie_name
-        self.config.cookie_name ||= OpenAM::Auth::Authenticator.get_cookie_name
+        self.config.cookie_name ||= 
+          OpenAM::Auth::API.get_cookie_name
+      end
+      
+      def verify_token(token)
+        OpenAM::Auth::API.verify_token token
+      end
+      
+      def logout(token)
+        OpenAM::Auth::API.logout token
       end
     end
   end
@@ -40,8 +52,7 @@ end
 
 # Default Configuration Setup
 OpenAM::Auth.configure do
-  config.host         = nil
-  config.scheme       = 'https'
+  config.url          = nil
   config.cookie_name  = nil
   
   config.timeout      = 20

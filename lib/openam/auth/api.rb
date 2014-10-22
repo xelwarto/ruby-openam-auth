@@ -15,47 +15,61 @@
 module OpenAM
   module Auth
     class API
+      include Singleton
+      
+      def initialize
+        @config = OpenAM::Auth.config
+      end
+      
       class << self
-        def get(uri=nil)
-          config = OpenAM::Auth.config
+        def get_cookie_name
+          API.instance.get_cookie_name
+        end
+        
+        def verify_token(token)
+          API.instance.verify_token token
+        end
+        
+        def logout(token)
+          API.instance.logout token
+        end
+      end
+      
+      def get_cookie_name
+        name = OpenAM::Auth::HTTP.get(@config.cookie_api)
+        if name.nil?
+          raise OpenAM::Auth::Error.new('returned cookie name is invalid')
+        else
+          name.gsub(/\Astring\=/, "")
+        end
+      end
+      
+      def logout(token=nil)
+        if token.nil?
+          raise OpenAM::Auth::Error.new('token value is invalid')
+        else
+          if verify_token token
+            OpenAM::Auth::HTTP.post(@config.logout_api, :headers => { OpenAM::Auth.cookie_name => token, 'Content-Type' => 'application/json' })
+          end
+        end
+      end
+      
+      def verify_token(token=nil)
+        if token.nil?
+          raise OpenAM::Auth::Error.new('token value is invalid')
+        else
+          results = OpenAM::Auth::HTTP.post(@config.token_api, :body => { 'tokenid' => token })
           
-          url = build_api(uri)
-          
-          if url.nil?
-            raise OpenAM::Auth::Error.new('API URL is invalid')
-          else
-            Timeout::timeout(config.timeout) do
-              HTTParty.get(url)
+          if !results.nil?
+            if /true\z/.match(results)
+              return true
             end
-          end  
-        end
-      end
-      
-      private
-      
-      def build_api(uri=nil)
-        api_url = nil
-        
-        raise OpenAM::Auth::Error.new('configured host is invalid') if config.host.nil?
-        raise OpenAM::Auth::Error.new('configured scheme is invalid') if config.scheme.nil?
-        raise OpenAM::Auth::Error.new('requested URI is invalid') if uri.nil?
-        
-        begin
-          api_uri = URI::HTTP.new(
-            config.scheme,
-            nil,
-            config.host,
-            nil,
-            uri,
-            nil,
-            nil
-          )
-        rescue
-          api_uri = nil
+          end
         end
         
-        api_url
+        return false
       end
+      
     end
   end
 end

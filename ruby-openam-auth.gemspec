@@ -19,6 +19,8 @@ Gem::Specification.new do |spec|
   
   # https://github.com/jnunemaker/httparty
   spec.add_dependency 'httparty', '~> 0.13'
+  
+  spec.add_dependency 'json', '~> 1.8'
 
   files = []
   dirs = %w{lib}
