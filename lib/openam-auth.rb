@@ -13,10 +13,10 @@
 # limitations under the License.
 
 require 'httparty'
-require 'singleton'
+require 'uri/http'
 
 require 'openam/auth/version'
-require 'openam/auth/errors'
+require 'openam/auth/error'
 require 'openam/auth/config'
 require 'openam/auth/api'
 
@@ -30,11 +30,26 @@ module OpenAM
       def configure(&block)
         class_eval(&block)
       end
+      
+      def cookie_name
+        self.config.cookie_name ||= OpenAM::Auth::Authenticator.get_cookie_name
+      end
     end
   end
 end
 
 # Default Configuration Setup
 OpenAM::Auth.configure do
-  config.timeout = 20
+  config.host         = nil
+  config.scheme       = 'https'
+  config.cookie_name  = nil
+  
+  config.timeout      = 20
+  
+  config.login_uri    = '/UI/Login'
+  config.logout_uri   = '/UI/Logout'
+  config.cookie_api   = '/identity/getCookieNameForToken'
+  config.token_api    = '/identity/isTokenValid'
+  config.user_api     = '/json/users?_action=idFromSession'
+  config.logout_api   = '/json/sessions/?_action=logout'
 end

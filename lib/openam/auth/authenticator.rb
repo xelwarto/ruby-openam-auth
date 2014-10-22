@@ -14,6 +14,22 @@
 
 module OpenAM
   module Auth
-    class APITimeoutError < StandardError; end
+    class Authenticator
+      class << self
+        def get_cookie_name
+          config = OpenAM::Auth.config
+          
+          name = OpenAM::Auth::API.get(config.cookie_api)
+          if name.nil?
+            raise OpenAM::Auth::Error.new('returned cookie name is invalid')
+          else
+            name.gsub!(/[\r\n]/, "")
+            name.gsub!(/\Astring\=/, "")
+          end
+          
+          name
+        end
+      end
+    end
   end
 end
