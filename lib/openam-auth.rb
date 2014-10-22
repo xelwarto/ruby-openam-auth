@@ -25,6 +25,7 @@ require 'openam/auth/api'
 
 module OpenAM
   module Auth
+    
     class << self
       def config
         OpenAM::Auth::Config.config
@@ -46,13 +47,23 @@ module OpenAM
       def logout(token)
         OpenAM::Auth::API.logout token
       end
+      
+      def login_url(goto=nil)
+        OpenAM::Auth::HTTP.build(self.config.login_uri, realm: self.config.realm, goto: goto)
+      end
+      
+      def logout_url(goto=nil)
+        OpenAM::Auth::HTTP.build(self.config.logout_uri, realm: self.config.realm, goto: goto)
+      end
     end
+    
   end
 end
 
 # Default Configuration Setup
 OpenAM::Auth.configure do
   config.url          = nil
+  config.realm          = nil
   config.cookie_name  = nil
   
   config.timeout      = 20

@@ -29,11 +29,15 @@ module OpenAM
         def post(uri,*opts)
           HTTP.instance.post uri,*opts
         end
+        
+        def build(uri,*opts)
+          HTTP.instance.build_url uri,*opts
+        end
       end
       
       def get(uri=nil)
         Timeout::timeout(@config.timeout) do
-          res = HTTParty.get(build_api(uri))
+          res = HTTParty.get(build_url(uri))
           if !res.nil?
             if res.body.nil?
               res.gsub(/[\r\n]/, "")
@@ -46,7 +50,7 @@ module OpenAM
       
       def post(uri=nil,*opts)
         Timeout::timeout(@config.timeout) do
-          res = HTTParty.post(build_api(uri),*opts)
+          res = HTTParty.post(build_url(uri),*opts)
           if !res.nil?
             if res.body.nil?
               res.gsub(/[\r\n]/, "")
@@ -56,10 +60,8 @@ module OpenAM
           end
         end 
       end
-
-      private
       
-      def build_api(uri=nil)
+      def build_url(uri=nil,*opts)
         raise OpenAM::Auth::Error.new('configured URL is invalid') if @config.url.nil?
         raise OpenAM::Auth::Error.new('requested URI is invalid') if uri.nil?
         
@@ -67,7 +69,24 @@ module OpenAM
         api << uri
         
         p = URI::Parser.new
-        p.escape(api)
+        api = p.escape(api)
+        
+        if !opts.nil? && !opts.first.nil?
+          if opts.first.instance_of? Hash
+            params = []
+            opts.first.each do |k,v|
+              if !v.nil?
+                p = URI::Parser.new(:RESERVED => '')
+                v = p.escape(v)
+                params.push "#{k}=#{v}"
+              end
+            end
+            api << "?"
+            api << params.join('&')
+          end
+        end
+        
+        api
       end
     end
   end
