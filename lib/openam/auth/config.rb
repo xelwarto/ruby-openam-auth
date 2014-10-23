@@ -20,9 +20,9 @@ module OpenAM
           @config ||= Configuration.new
         end
       end
-      
+
       protected
-      
+
       class Configuration
         def initialize
           @u_defined = {}

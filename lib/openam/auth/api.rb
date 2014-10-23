@@ -15,26 +15,71 @@
 module OpenAM
   module Auth
     class API
-      include Singleton
 
       def initialize
-        @config = OpenAM::Auth.config
+        @config       = OpenAM::Auth.config
+        @cookie_name  = nil
       end
-      
-      class << self
-        def get_cookie_name
-          API.instance.get_cookie_name
-        end
-        
-        def verify_token(token)
-          API.instance.verify_token token
-        end
-        
-        def logout(token)
-          API.instance.logout token
+
+      def cookie_name
+        @cookie_name ||= get_cookie_name
+      end
+
+      def logout(token=nil)
+        if token.nil?
+          raise OpenAM::Auth::Error.new('token value is invalid')
+        else
+          if verify_token token
+            OpenAM::Auth::HTTP.post(
+              @config.logout_api,
+              :headers => {
+                OpenAM::Auth.cookie_name => token,
+                'Content-Type' => 'application/json'
+              }
+            )
+          end
         end
       end
-      
+
+      def verify_token(token=nil)
+        if token.nil?
+          raise OpenAM::Auth::Error.new('token value is invalid')
+        else
+          results = OpenAM::Auth::HTTP.post(
+            @config.token_api,
+            :body => {
+              'tokenid' => token
+            }
+          )
+
+          if !results.nil?
+            if /true\z/.match(results)
+              return true
+            end
+          end
+        end
+
+        return false
+      end
+
+      def login_url(goto=nil)
+        OpenAM::Auth::HTTP.build(
+          self.config.login_uri,
+          realm: self.config.realm,
+          goto: goto
+        )
+      end
+
+      def logout_url(goto=nil)
+        OpenAM::Auth::HTTP.build(
+          self.config.logout_uri,
+          realm: self.config.realm,
+          goto: goto
+        )
+      end
+
+      private
+
       def get_cookie_name
         name = OpenAM::Auth::HTTP.get(@config.cookie_api)
         if name.nil?
@@ -43,33 +88,7 @@ module OpenAM
           name.gsub(/\Astring\=/, "")
         end
       end
-      
-      def logout(token=nil)
-        if token.nil?
-          raise OpenAM::Auth::Error.new('token value is invalid')
-        else
-          if verify_token token
-            OpenAM::Auth::HTTP.post(@config.logout_api, :headers => { OpenAM::Auth.cookie_name => token, 'Content-Type' => 'application/json' })
-          end
-        end
-      end
-      
-      def verify_token(token=nil)
-        if token.nil?
-          raise OpenAM::Auth::Error.new('token value is invalid')
-        else
-          results = OpenAM::Auth::HTTP.post(@config.token_api, :body => { 'tokenid' => token })
-          
-          if !results.nil?
-            if /true\z/.match(results)
-              return true
-            end
-          end
-        end
-        
-        return false
-      end
-      
+
     end
   end
 end

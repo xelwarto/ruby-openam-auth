@@ -25,49 +25,28 @@ require 'openam/auth/api'
 
 module OpenAM
   module Auth
-    
+
     class << self
       def config
         OpenAM::Auth::Config.config
       end
-      
+
       def configure(&block)
         class_eval(&block)
       end
-      
-      def cookie_name
-        self.config.cookie_name ||= 
-          OpenAM::Auth::API.get_cookie_name
-      end
-      
-      def verify_token(token)
-        OpenAM::Auth::API.verify_token token
-      end
-      
-      def logout(token)
-        OpenAM::Auth::API.logout token
-      end
-      
-      def login_url(goto=nil)
-        OpenAM::Auth::HTTP.build(self.config.login_uri, realm: self.config.realm, goto: goto)
-      end
-      
-      def logout_url(goto=nil)
-        OpenAM::Auth::HTTP.build(self.config.logout_uri, realm: self.config.realm, goto: goto)
-      end
     end
-    
+
   end
 end
 
 # Default Configuration Setup
 OpenAM::Auth.configure do
   config.url          = nil
-  config.realm          = nil
+  config.realm        = nil
   config.cookie_name  = nil
-  
+
   config.timeout      = 20
-  
+
   config.login_uri    = '/UI/Login'
   config.logout_uri   = '/UI/Logout'
   config.cookie_api   = '/identity/getCookieNameForToken'

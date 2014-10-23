@@ -16,25 +16,25 @@ module OpenAM
   module Auth
     class HTTP
       include Singleton
-      
+
       def initialize
         @config = OpenAM::Auth.config
       end
-      
+
       class << self
         def get(uri)
           HTTP.instance.get uri
         end
-        
+
         def post(uri,*opts)
           HTTP.instance.post uri,*opts
         end
-        
+
         def build(uri,*opts)
           HTTP.instance.build_url uri,*opts
         end
       end
-      
+
       def get(uri=nil)
         Timeout::timeout(@config.timeout) do
           res = HTTParty.get(build_url(uri))
@@ -45,9 +45,9 @@ module OpenAM
               res.body.gsub(/[\r\n]/, "")
             end
           end
-        end 
+        end
       end
-      
+
       def post(uri=nil,*opts)
         Timeout::timeout(@config.timeout) do
           res = HTTParty.post(build_url(uri),*opts)
@@ -58,19 +58,19 @@ module OpenAM
               res.body.gsub(/[\r\n]/, "")
             end
           end
-        end 
+        end
       end
-      
+
       def build_url(uri=nil,*opts)
         raise OpenAM::Auth::Error.new('configured URL is invalid') if @config.url.nil?
         raise OpenAM::Auth::Error.new('requested URI is invalid') if uri.nil?
-        
+
         api = @config.url.clone
         api << uri
-        
+
         p = URI::Parser.new
         api = p.escape(api)
-        
+
         if !opts.nil? && !opts.first.nil?
           if opts.first.instance_of? Hash
             params = []
@@ -85,7 +85,7 @@ module OpenAM
             api << params.join('&')
           end
         end
-        
+
         api
       end
     end
