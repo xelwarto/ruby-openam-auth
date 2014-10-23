@@ -30,15 +30,27 @@ module OpenAM
           raise OpenAM::Auth::Error.new('token value is invalid')
         else
           if verify_token token
-            OpenAM::Auth::HTTP.post(
+            c_name = cookie_name
+
+            results = OpenAM::Auth::HTTP.post(
               @config.logout_api,
-              :headers => {
-                OpenAM::Auth.cookie_name => token,
+              headers: {
+                c_name => token,
                 'Content-Type' => 'application/json'
               }
             )
+
+            if results.nil?
+              raise OpenAM::Auth::Error.new('returned cookie name is invalid')
+            else
+              if results !~ /\A\{/
+                results = nil
+              end
+            end
           end
         end
+
+        results
       end
 
       def verify_token(token=nil)
@@ -47,13 +59,13 @@ module OpenAM
         else
           results = OpenAM::Auth::HTTP.post(
             @config.token_api,
-            :body => {
+            body: {
               'tokenid' => token
             }
           )
 
           if !results.nil?
-            if /true\z/.match(results)
+            if /true\Z/.match(results)
               return true
             end
           end
