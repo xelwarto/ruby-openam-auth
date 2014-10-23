@@ -43,7 +43,7 @@ end
 OpenAM::Auth.configure do
   config.url          = nil
   config.realm        = nil
-  config.cookie_name  = nil
+  config.cookie_name  = 'iPlanetDirectoryPro'
 
   config.timeout      = 20
 

@@ -64,16 +64,16 @@ module OpenAM
 
       def login_url(goto=nil)
         OpenAM::Auth::HTTP.build(
-          self.config.login_uri,
-          realm: self.config.realm,
+          @config.login_uri,
+          realm: @config.realm,
           goto: goto
         )
       end
 
       def logout_url(goto=nil)
         OpenAM::Auth::HTTP.build(
-          self.config.logout_uri,
-          realm: self.config.realm,
+          @config.logout_uri,
+          realm: @config.realm,
           goto: goto
         )
       end
@@ -85,7 +85,11 @@ module OpenAM
         if name.nil?
           raise OpenAM::Auth::Error.new('returned cookie name is invalid')
         else
-          name.gsub(/\Astring\=/, "")
+          if name =~ /\Astring\=.*\Z/
+            name.gsub(/\Astring\=/, "")
+          else
+            @config.cookie_name
+          end
         end
       end
 
