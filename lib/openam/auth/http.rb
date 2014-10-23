@@ -22,72 +22,46 @@ module OpenAM
       end
 
       class << self
-        def get(uri)
+        def get(uri,*opts)
           HTTP.instance.get uri
         end
 
         def post(uri,*opts)
           HTTP.instance.post uri,*opts
         end
-
-        def build(uri,*opts)
-          HTTP.instance.build_url uri,*opts
-        end
       end
 
-      def get(uri=nil)
+      def get(uri=nil,*opts)
         Timeout::timeout(@config.timeout) do
-          res = HTTParty.get(build_url(uri))
-          if !res.nil?
-            if res.body.nil?
-              res.gsub(/[\r\n]/, "")
-            else
-              res.body.gsub(/[\r\n]/, "")
-            end
-          end
+          HttpResult.new(HTTParty.post(uri,*opts))
         end
       end
 
       def post(uri=nil,*opts)
         Timeout::timeout(@config.timeout) do
-          res = HTTParty.post(build_url(uri),*opts)
-          if !res.nil?
-            if res.body.nil?
-              res.gsub(/[\r\n]/, "")
-            else
-              res.body.gsub(/[\r\n]/, "")
-            end
-          end
+          HttpResult.new(HTTParty.post(uri,*opts))
         end
       end
-
-      def build_url(uri=nil,*opts)
-        raise OpenAM::Auth::Error.new('configured URL is invalid') if @config.url.nil?
-        raise OpenAM::Auth::Error.new('requested URI is invalid') if uri.nil?
-
-        api = @config.url.clone
-        api << uri
-
-        p = URI::Parser.new
-        api = p.escape(api)
-
-        if !opts.nil? && !opts.first.nil?
-          if opts.first.instance_of? Hash
-            params = []
-            opts.first.each do |k,v|
-              if !v.nil?
-                p = URI::Parser.new(:RESERVED => '')
-                v = p.escape(v)
-                params.push "#{k}=#{v}"
-              end
+      
+      class HttpResult
+        attr_reader :body, :contentType
+        
+        def initialize(result=nil)
+          raise OpenAM::Auth::Error.new('HTTP resukts are invalid') if result.nil?
+          
+          if !result.headers.nil?
+            if !result.headers['content-type'].nil?
+              @contentType = result.headers['content-type']
             end
-            api << "?"
-            api << params.join('&')
+          end
+          
+          if !result.body.nil?
+            @body = result.body.gsub(/[\r\n]/, "")
           end
         end
-
-        api
+        
       end
+      
     end
   end
 end

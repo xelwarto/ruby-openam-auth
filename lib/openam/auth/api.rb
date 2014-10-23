@@ -25,47 +25,83 @@ module OpenAM
         @cookie_name ||= get_cookie_name
       end
 
+      # method: logout
+      #
+      # JSON Result Examples:
+      # { :result => "Successfully logged out" }
       def logout(token=nil)
-        if token.nil?
-          raise OpenAM::Auth::Error.new('token value is invalid')
+        raise OpenAM::Auth::Error.new('token value is invalid') if token.nil?
+        c_name = cookie_name
+
+        res = OpenAM::Auth::HTTP.post(
+          build_api(
+            @config.logout_api,
+            '_action' => 'logout'
+          ),
+          headers: {
+            c_name => token,
+            'Content-Type' => 'application/json'
+          }
+        )
+        
+        if res.body.nil? || res.contentType.nil?
+          raise OpenAM::Auth::Error.new('logout request results invalid')
         else
-          if verify_token token
-            c_name = cookie_name
-
-            results = OpenAM::Auth::HTTP.post(
-              @config.logout_api,
-              headers: {
-                c_name => token,
-                'Content-Type' => 'application/json'
-              }
-            )
-
-            if results.nil?
-              raise OpenAM::Auth::Error.new('returned cookie name is invalid')
-            else
-              if results !~ /\A\{/
-                results = nil
-              end
-            end
+          if res.contentType =~ /\Aapplication\/json/
+            JsonResult.new res.body
           end
         end
-
-        results
+        
+      end
+      
+      # method: login
+      #
+      # JSON Result Examples:
+      # { :errorMessage => "User Account Locked" }
+      # { :tokenId => "TOKEN", :successUrl => "https://www.myunfpa.org/" }
+      # { :errorMessage => "Authentication Error!!" }
+      def login(username=nil,password=nil)
+        raise OpenAM::Auth::Error.new('login username is invalid') if username.nil?
+        raise OpenAM::Auth::Error.new('login password is invalid') if password.nil?
+        
+        res = OpenAM::Auth::HTTP.post(
+          build_api(
+            @config.login_api,
+            realm: @config.realm
+          ),
+          headers: {
+            'X-OpenAM-Username' => username,
+            'X-OpenAM-Password' => password,
+            'Content-Type' => 'application/json'
+          }
+        )
+        
+        if res.body.nil? || res.contentType.nil?
+          raise OpenAM::Auth::Error.new('login request results invalid')
+        else
+          if res.contentType =~ /\Aapplication\/json/
+            JsonResult.new res.body
+          end
+        end
       end
 
+      # method: verify_token
+      #
       def verify_token(token=nil)
-        if token.nil?
-          raise OpenAM::Auth::Error.new('token value is invalid')
+        raise OpenAM::Auth::Error.new('token value is invalid') if token.nil?
+        
+        res = OpenAM::Auth::HTTP.post(
+          build_api(@config.token_api),
+          body: {
+            'tokenid' => token
+          }
+        )
+        
+        if res.body.nil? || res.contentType.nil?
+          raise OpenAM::Auth::Error.new('verify token request results invalid')
         else
-          results = OpenAM::Auth::HTTP.post(
-            @config.token_api,
-            body: {
-              'tokenid' => token
-            }
-          )
-
-          if !results.nil?
-            if /true\Z/.match(results)
+          if res.contentType =~ /\Atext\/plain/
+            if /true\Z/.match(res.body)
               return true
             end
           end
@@ -74,16 +110,20 @@ module OpenAM
         return false
       end
 
+      # method: login_url
+      #
       def login_url(goto=nil)
-        OpenAM::Auth::HTTP.build(
+        build_api(
           @config.login_uri,
           realm: @config.realm,
           goto: goto
         )
       end
 
+      # method: logout_url
+      #
       def logout_url(goto=nil)
-        OpenAM::Auth::HTTP.build(
+        build_api(
           @config.logout_uri,
           realm: @config.realm,
           goto: goto
@@ -93,16 +133,79 @@ module OpenAM
       private
 
       def get_cookie_name
-        name = OpenAM::Auth::HTTP.get(@config.cookie_api)
-        if name.nil?
+        res = OpenAM::Auth::HTTP.get(build_api(@config.cookie_api))
+
+        if res.body.nil? || res.contentType.nil?
           raise OpenAM::Auth::Error.new('returned cookie name is invalid')
         else
-          if name =~ /\Astring\=.*\Z/
-            name.gsub(/\Astring\=/, "")
+          if res.contentType =~ /\Atext\/plain/
+            if res.body =~ /\Astring\=.*\Z/
+              res.body.gsub(/\Astring\=/, "")
+            else
+              @config.cookie_name
+            end
           else
             @config.cookie_name
           end
         end
+      end
+      
+      def build_api(uri=nil,*opts)
+        raise OpenAM::Auth::Error.new('configured URL is invalid') if @config.url.nil?
+        raise OpenAM::Auth::Error.new('requested URI is invalid') if uri.nil?
+
+        api = @config.url.clone
+        api << uri
+
+        p = URI::Parser.new
+        api = p.escape(api)
+
+        if !opts.nil? && !opts.first.nil?
+          if opts.first.instance_of? Hash
+            params = []
+            opts.first.each do |k,v|
+              if !v.nil?
+                p = URI::Parser.new(:RESERVED => '')
+                v = p.escape(v)
+                params.push "#{k}=#{v}"
+              end
+            end
+            api << "?"
+            api << params.join('&')
+          end
+        end
+
+        api
+      end
+      
+      class JsonResult
+      
+        def initialize(json=nil)
+          @json_data = {}
+          
+          if json.nil?
+            raise OpenAM::Auth::Error.new('JSON data is invalid')
+          else
+            JSON.parse(json).each do |i|
+              key = i.shift
+              value = i.shift
+              @json_data[key.to_sym] = value
+            end
+          end
+        end
+        
+        def [](key)
+          @json_data[key.to_sym]
+        end
+        
+        def udefine(key,*opts)
+          if !key.nil?
+            key = key.to_s
+            @json_data[key.to_sym]
+          end
+        end
+        alias method_missing udefine
+        
       end
 
     end

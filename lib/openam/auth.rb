@@ -52,5 +52,6 @@ OpenAM::Auth.configure do
   config.cookie_api   = '/identity/getCookieNameForToken'
   config.token_api    = '/identity/isTokenValid'
   config.user_api     = '/json/users?_action=idFromSession'
-  config.logout_api   = '/json/sessions/?_action=logout'
+  config.logout_api   = '/json/sessions/'
+  config.login_api    = '/json/authenticate'
 end
