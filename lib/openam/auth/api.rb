@@ -19,6 +19,16 @@ module OpenAM
       def initialize
         @config       = OpenAM::Auth.config
         @cookie_name  = nil
+        
+        raise OpenAM::Auth::Error.new('configured OpenAM URL is invalid') if @config.url.nil?
+        uri = URI(@config.url)
+        
+        raise OpenAM::Auth::Error.new('configured OpenAM URL is invalid') if uri.scheme.nil?
+        
+        if uri.scheme != 'https' && @config.scheme_http.nil?
+          raise OpenAM::Auth::Error.new('OpenAM URL scheme is not HTTPS')
+        end
+        @config.url = uri.to_s
       end
 
       def cookie_name
@@ -29,15 +39,13 @@ module OpenAM
       #
       # JSON Result Examples:
       # { :result => "Successfully logged out" }
+      # { "code": 403, "reason": "Forbidden", "message": "Access denied" }
       def logout(token=nil)
         raise OpenAM::Auth::Error.new('token value is invalid') if token.nil?
         c_name = cookie_name
 
         res = OpenAM::Auth::HTTP.post(
-          build_api(
-            @config.logout_api,
-            '_action' => 'logout'
-          ),
+          build_api(@config.logout_api),
           headers: {
             c_name => token,
             'Content-Type' => 'application/json'
@@ -78,6 +86,30 @@ module OpenAM
         
         if res.body.nil? || res.contentType.nil?
           raise OpenAM::Auth::Error.new('login request results invalid')
+        else
+          if res.contentType =~ /\Aapplication\/json/
+            JsonResult.new res.body
+          end
+        end
+      end
+      
+      # method: user_info
+      #
+      def user_info(token=nil)
+        raise OpenAM::Auth::Error.new('token value is invalid') if token.nil?
+        
+        c_name = cookie_name
+
+        res = OpenAM::Auth::HTTP.post(
+          build_api(@config.user_api),
+          headers: {
+            c_name => token,
+            'Content-Type' => 'application/json'
+          }
+        )
+        
+        if res.body.nil? || res.contentType.nil?
+          raise OpenAM::Auth::Error.new('user info request results invalid')
         else
           if res.contentType =~ /\Aapplication\/json/
             JsonResult.new res.body
@@ -151,12 +183,27 @@ module OpenAM
       end
       
       def build_api(uri=nil,*opts)
-        raise OpenAM::Auth::Error.new('configured URL is invalid') if @config.url.nil?
+        raise OpenAM::Auth::Error.new('configured OpenAM URL is invalid') if @config.url.nil?
         raise OpenAM::Auth::Error.new('requested URI is invalid') if uri.nil?
 
         api = @config.url.clone
-        api << uri
-
+        
+        if uri.instance_of? Hash
+          api << uri.delete(:uri)
+          
+          if !uri.empty?
+            if !opts.nil? && !opts.first.nil?
+              opts.first.merge! uri
+            else
+              opts.push uri
+            end
+          end
+        elsif uri.instance_of? String
+          api << uri
+        else
+          raise OpenAM::Auth::Error.new('requested URI is invalid')
+        end
+        
         p = URI::Parser.new
         api = p.escape(api)
 
@@ -186,12 +233,17 @@ module OpenAM
           if json.nil?
             raise OpenAM::Auth::Error.new('JSON data is invalid')
           else
+            @raw_json = json
             JSON.parse(json).each do |i|
               key = i.shift
               value = i.shift
               @json_data[key.to_sym] = value
             end
           end
+        end
+        
+        def to_s
+          @raw_json
         end
         
         def [](key)

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 require 'httparty'
-require 'uri/http'
+require 'uri'
 require 'singleton'
 require 'json'
 
@@ -51,7 +51,7 @@ OpenAM::Auth.configure do
   config.logout_uri   = '/UI/Logout'
   config.cookie_api   = '/identity/getCookieNameForToken'
   config.token_api    = '/identity/isTokenValid'
-  config.user_api     = '/json/users?_action=idFromSession'
-  config.logout_api   = '/json/sessions/'
+  config.user_api     = { uri: '/json/users', '_action' => 'idFromSession' }
+  config.logout_api   = { uri: '/json/sessions/', '_action' => 'logout' }
   config.login_api    = '/json/authenticate'
 end
