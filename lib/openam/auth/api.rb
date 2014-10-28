@@ -15,6 +15,7 @@
 module OpenAM
   module Auth
     class API
+      include Singleton
 
       def initialize
         @config       = OpenAM::Auth.config
