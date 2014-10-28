@@ -31,8 +31,8 @@ module OpenAM
         OpenAM::Auth::Config.config
       end
 
-      def configure(&block)
-        class_eval(&block)
+      def configure
+        yield OpenAM::Auth::Config.config if block_given?
       end
     end
 
@@ -40,7 +40,7 @@ module OpenAM
 end
 
 # Default Configuration Setup
-OpenAM::Auth.configure do
+OpenAM::Auth.configure do |config|
   config.url          = nil
   config.realm        = nil
   config.cookie_name  = 'iPlanetDirectoryPro'
