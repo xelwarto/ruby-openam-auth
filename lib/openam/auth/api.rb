@@ -190,13 +190,16 @@ module OpenAM
         api = @config.url.clone
         
         if uri.instance_of? Hash
-          api << uri.delete(:uri)
+          uri_c = uri.clone
           
-          if !uri.empty?
+          raise OpenAM::Auth::Error.new('requested URI is invalid') if uri_c[:uri].nil?
+          api << uri_c.delete(:uri)
+          
+          if !uri_c.empty?
             if !opts.nil? && !opts.first.nil?
-              opts.first.merge! uri
+              opts.first.merge! uri_c
             else
-              opts.push uri
+              opts.push uri_c
             end
           end
         elsif uri.instance_of? String

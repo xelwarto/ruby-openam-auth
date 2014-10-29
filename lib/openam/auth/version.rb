@@ -15,6 +15,6 @@
 module OpenAM
   module Auth
     NAME    = 'ruby-openam-auth'
-    VERSION = '0.2'
+    VERSION = '0.3'
   end
 end
