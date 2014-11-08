@@ -33,7 +33,7 @@ module OpenAM
 
       def get(uri=nil,*opts)
         Timeout::timeout(@config.timeout) do
-          HttpResult.new(HTTParty.post(uri,*opts))
+          HttpResult.new(HTTParty.get(uri,*opts))
         end
       end
 
@@ -42,26 +42,25 @@ module OpenAM
           HttpResult.new(HTTParty.post(uri,*opts))
         end
       end
-      
+
       class HttpResult
         attr_reader :body, :contentType
-        
+
         def initialize(result=nil)
           raise OpenAM::Auth::Error.new('HTTP resukts are invalid') if result.nil?
-          
+
           if !result.headers.nil?
             if !result.headers['content-type'].nil?
               @contentType = result.headers['content-type']
             end
           end
-          
+
           if !result.body.nil?
             @body = result.body.gsub(/[\r\n]/, "")
           end
         end
-        
       end
-      
+
     end
   end
 end
